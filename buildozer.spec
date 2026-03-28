@@ -1,6 +1,7 @@
 [app]
 
 title = B项目防封
+p4a.branch = develop
 package.name = antiban_cloud
 package.domain = com.bproject
 

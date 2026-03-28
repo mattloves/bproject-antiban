@@ -1,0 +1,70 @@
+# B项目防封系统 - 云机配置文件
+
+# 中控服务器地址
+server:
+  host: "192.168.3.20"  # 改成你的电脑IP
+  port: 8888
+  url: "ws://192.168.3.20:8888"
+
+# 云机设备信息
+device:
+  device_id: "cloud_001"
+  device_name: "云机-001"
+  device_type: "ai_cloud"
+
+# 防封功能配置
+antiban:
+  # IP切换
+  ip_switch:
+    enabled: true
+    interval_hours: 4
+    groups: ["A", "B", "C", "D", "E"]
+  
+  # 设备指纹
+  fingerprint:
+    enabled: true
+    randomize_imei: true
+    randomize_mac: true
+    randomize_android_id: true
+  
+  # 行为随机化
+  behavior:
+    enabled: true
+    interval_min: 1.5
+    interval_max: 5.0
+    position_offset: 10
+    rest_probability: 0.1
+  
+  # 进程隐藏
+  process_hide:
+    enabled: true
+    processes:
+      - "com.netease.qyq"  # 倩女幽魂
+      - "com.bproject.antiban"  # 防封工具
+      - "com.magisk"  # Magisk
+  
+  # ROOT隐藏
+  root_hide:
+    enabled: true
+    use_shamiko: true
+
+# 与天火的协作
+tianhuo:
+  enabled: true
+  mode: "sequential"  # sequential 或 parallel
+  pause_before_antiban: true
+  resume_after_antiban: true
+  pause_duration_seconds: 2
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "/sdcard/antiban.log"
+  max_size_mb: 10
+  backup_count: 3
+
+# 监控配置
+monitoring:
+  enabled: true
+  check_interval_seconds: 60
+  report_to_server: true
