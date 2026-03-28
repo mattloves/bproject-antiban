@@ -37,12 +37,15 @@ jobs:
       run: |
         mkdir -p $HOME/.android
         echo "### User Sources for Android SDK Manager" > $HOME/.android/repositories.cfg
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        echo "count=0" >> $HOME/.android/repositories.cfg
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
+        echo -e "\n8933bad161af4d5e1ff7d6a6ade4b1edee24a7c7" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
     
     - name: Build APK with Buildozer
       run: |
         cd ${{ github.workspace }}
-        buildozer android debug 2>&1
+        buildozer android debug
     
     - name: Upload APK if exists
       uses: actions/upload-artifact@v4
