@@ -7,27 +7,78 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    
-    container:
-      image: kivy/buildozer:latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip git unzip zip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libffi-dev python3-dev squashfs-tools openjdk-17-jdk-headless
+    
+    - name: Set environment
+      run: |
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/android-ndk" >> $GITHUB_ENV
+        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+    
+    - name: Download Android SDK command line tools
+      run: |
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+        unzip -q cmdline-tools.zip
+        mv cmdline-tools latest
+        rm cmdline-tools.zip
+    
+    - name: Accept licenses and install SDK components
+      run: |
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34" "ndk;25.2.9519653"
+    
+    - name: Download Android NDK
+      run: |
+        mkdir -p $HOME/android-ndk
+        cd $HOME/android-ndk
+        wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+        unzip -q ndk.zip
+        mv android-ndk-r25b/* .
+        rm -rf android-ndk-r25b ndk.zip
+    
+    - name: Install Python packages
+      run: |
+        pip3 install --upgrade pip setuptools wheel
+        pip3 install buildozer cython==0.29.33
+    
+    - name: Fix SDL2_image recipe
+      run: |
+        # Patch the SDL2_image recipe to fix the missing branch issue
+        pip3 show python-for-android > /dev/null 2>&1 || pip3 install python-for-android
+        PF4A_PATH=$(python3 -c "import pythonforandroid; print(pythonforandroid.__path__[0])")
+        if [ -f "$PF4A_PATH/recipes/sdl2_image/__init__.py" ]; then
+          # Replace git clone with specific tag/commit
+          sed -i 's|git clone|git clone --depth 1|g' $PF4A_PATH/recipes/sdl2_image/__init__.py 2>/dev/null || true
+        fi
     
     - name: Build APK
       run: |
-        cd /github/workspace
+        export ANDROIDSDK=$HOME/android-sdk
+        export ANDROIDNDK=$HOME/android-ndk
+        export ANDROIDAPI=31
+        export ANDROIDMINAPI=21
         buildozer android debug
     
     - name: Find APK
-      run: |
-        find . -name "*.apk" -type f
+      run: find . -name "*.apk" -type f
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: bproject-antiban-apk
         path: bin/*.apk
-        if-no-files-found: warn
+        retention-days: 5
+        if-no-files-found: error
